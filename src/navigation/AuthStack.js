@@ -11,6 +11,7 @@ import RegisterAgent from '../screens/RegisterAgent'
 import AddedProductsList from '../screens/AddedProductsList'
 import ProductAddingScreen from '../screens/ProductAddingScreen'
 import DriveLogin from '../screens/DriveLogin'
+import BarcodeGeneration from '../screens/BarcodeGeneration'
 
 const Stack = createNativeStackNavigator();
 
@@ -27,6 +28,7 @@ const AuthStack = () => {
         <Stack.Screen name='AddedProductsList' component={AddedProductsList}/>
         <Stack.Screen name='ProductAddingScreen' component={ProductAddingScreen}/>
         <Stack.Screen name='DriveLogin' component={DriveLogin}/>
+        <Stack.Screen name='BarcodeGeneration' component={BarcodeGeneration}/>
       </Stack.Navigator>
     </NavigationContainer>
   )
