@@ -7,9 +7,8 @@ import {
   TextInput,
   TouchableOpacity,
   Pressable,
-  Alert,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import {colors} from '../constants/colors';
@@ -39,21 +38,15 @@ const AgentLogin = () => {
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [modalContent, setModalContent] = useState('');
   const [modalError, setModalError] = useState('');
   const [isErrorVisible, setIsErrorVisible] = useState(false);
-  const [uploadLogoText, setUploadLogoText] = useState(false);
-  const [isLogin, setIsLogin] = useState(false);
+  const [logoLoading,setLogoLoading] = useState(false);
+  const [logoUri, setLogoUri] = useState();
 
   //Zustand Store
   const {setAgentData, agent} = useUserStore();
-
-  //Cloudinary API
-  const CLOUDINARY_URL =
-    'https://api.cloudinary.com/v1_1/dx5pxvbcv/image/upload';
-  const UPLOAD_PRESET = 'agent_logos';
 
   //KeyPad Pressing Function
   const handlePress = key => {
@@ -66,6 +59,23 @@ const AgentLogin = () => {
       setPin(pin + key.toString());
     }
   };
+
+
+  //Fetching Admin LOGO 
+  useEffect(() => {
+    setLogoLoading(true)
+    try{
+      const fetchadminLogo = async () => {
+      const adminLogo = await getFirestore().collection('admin').doc('admin').get();
+        setLogoUri(adminLogo.data().AdminLogoUri)
+      }
+      fetchadminLogo();
+    }catch(error){
+     setLogoUri(null) 
+    }finally{
+      setLogoLoading(false)
+    }
+  },[])
 
   //Handle Agent Login
   const handleLogin = async () => {
@@ -81,15 +91,12 @@ const AgentLogin = () => {
         setError("Agent doesn't exist");
         setLoading(false);
         return;
-      }
-      if (isExist.data().AgentLogoUri) {
-        setLogoUri(isExist.data().AgentLogoUri);
+      }else{
+        console.log("Agent exists")
       }
       setAgentData(isExist.data());
       setIsVisible(true);
       setModalError('');
-      setUploadLogoText(true);
-      setIsLogin(true);
       setModalContent('Successfully logged in');
     } catch (error) {
       setModalContent('');
@@ -100,73 +107,6 @@ const AgentLogin = () => {
   };
 
   //Logo Uploading
-  const [logoUri, setLogoUri] = useState();
-  const handleLogoUpload = () => {
-    if (agent.AgentID) {
-      const options = {mediaType: 'photo', quality: 1};
-      launchImageLibrary(options, async response => {
-        if (response.didCancel) {
-          console.log('User cancelled gallery selection');
-          return;
-        }
-        if (response.errorMessage) {
-          console.log('Gallery Error:', response.errorMessage);
-          return;
-        }
-        const imageUri = response.assets[0]?.uri;
-        if (!imageUri) {
-          setIsErrorVisible(true);
-          setModalContent('');
-          setModalError('No image is selected');
-          return;
-        }
-        setUploadingLogo(true);
-        try {
-          // Upload to Cloudinary
-          const data = new FormData();
-          data.append('file', {
-            uri: imageUri,
-            type: 'image/jpeg',
-            name: 'logo.jpg',
-          });
-          data.append('upload_preset', UPLOAD_PRESET);
-          data.append('cloud_name', 'dx5pxvbcv');
-
-          const cloudResponse = await axios.post(CLOUDINARY_URL, data, {
-            headers: {'Content-Type': 'multipart/form-data'},
-          });
-
-          const imageUrl = cloudResponse.data.secure_url;
-          console.log('Uploaded Image URL:', imageUrl);
-          // Upload URL to Firestore
-          if (agent.AgentID) {
-            await getFirestore()
-              .collection('agents')
-              .doc(agent.AgentID)
-              .set({AgentLogoUri: imageUrl}, {merge: true});
-            setLogoUri(imageUrl);
-            setIsVisible(true);
-            setModalError('');
-            setUploadLogoText(false);
-            setIsLogin(true);
-            setModalContent('Logo uploaded successfully!!!');
-          } else {
-            console.log('Agent ID not found. Cannot upload logo to Firestore.');
-          }
-        } catch (error) {
-          setIsErrorVisible(true);
-          setModalContent('');
-          setModalError('Error while uploading logo');
-        } finally {
-          setUploadingLogo(false);
-        }
-      });
-    } else {
-      setIsErrorVisible(true);
-      setModalContent('');
-      setModalError('Login first');
-    }
-  };
 
   return (
     <TouchableWithoutFeedback>
@@ -176,48 +116,29 @@ const AgentLogin = () => {
         <View style={styles.Innercontainer}>
           <Text style={styles.headerText}>AGENT LOGIN</Text>
           <View>
-            <View style={styles.imageWrapper}>
-              {uploadingLogo ? (
-                <View style={styles.loaderContainer}>
-                  <ActivityIndicator
-                    animating={true}
-                    color={MD2Colors.orange800}
-                    size="small"
+            <View style={[styles.imageWrapper, !logoLoading ? { justifyContent:'center',alignItems:'center' } : null]}>
+              {
+                logoLoading 
+                ? (
+                  <View style={{ alignSelf:'center' }}>
+                   <ActivityIndicator 
+                   animating={true}
+                   color={MD2Colors.blue900}
+                   />
+                    </View>
+                )
+                : (
+                    <Image
+                    style={styles.LogoImage}
+                    source={
+                      logoUri=== null ? require('../images/avatar.png') : { uri:logoUri }
+                    }
                   />
-                </View>
-              ) : (
-                <Image
-                  style={styles.LogoImage}
-                  source={
-                    logoUri ? {uri: logoUri} : require('../images/avatar.png')
-                  }
-                />
-              )}
+                )
+              }
+                
             </View>
-            <Pressable
-              style={styles.FABCameraIcon}
-              onPress={() => handleLogoUpload()}>
-              {logoUri ? (
-                <Feather
-                  name="refresh-ccw"
-                  size={dimensions.xl / 2}
-                  color={colors.pureWhite}
-                  style={{padding: dimensions.sm / 4}}
-                />
-              ) : (
-                <Feather
-                  name="plus"
-                  size={dimensions.md}
-                  color={colors.pureWhite}
-                />
-              )}
-            </Pressable>
           </View>
-
-          {uploadLogoText ? (
-            <Text style={styles.uploadLogoText}>Upload your logo here</Text>
-          ) : null}
-
           <View>
             <View style={styles.inputContainer}>
               <MaterialCommunityIcons
@@ -250,33 +171,6 @@ const AgentLogin = () => {
               </View>
             ))}
           </View>
-
-          {isLogin ? (
-            <View>
-              <TouchableOpacity
-                style={styles.LoginContainer}
-                onPress={() =>
-                  setTimeout(() => {
-                    navigation.replace('AgentHomePage');
-                  }, 500)
-                }>
-                <LinearGradient
-                  colors={[colors.orange, colors.darkblue]}
-                  start={{x: 1, y: 0}}
-                  end={{x: 0, y: 1}}
-                  style={styles.gradient}>
-                  {loading ? (
-                    <ActivityIndicator
-                      animating={true}
-                      color={MD2Colors.white}
-                    />
-                  ) : (
-                    <Text style={styles.loginText}>Proceed to Homepage</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          ) : (
             <View>
               <TouchableOpacity
                 style={styles.LoginContainer}
@@ -297,7 +191,6 @@ const AgentLogin = () => {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-          )}
         </View>
 
         <Footer />
@@ -354,6 +247,9 @@ const AgentLogin = () => {
                 setIsVisible(false);
                 setModalError('');
                 setModalContent('');
+                setTimeout(() => {
+                  navigation.replace('AgentHomePage')
+                },500)
               }}
               style={{paddingHorizontal: dimensions.xl, margin: dimensions.sm}}
               textColor={colors.pureWhite}
