@@ -12,13 +12,14 @@ import AddedProductsList from '../screens/AddedProductsList'
 import ProductAddingScreen from '../screens/ProductAddingScreen'
 import DriveLogin from '../screens/DriveLogin'
 import BarcodeGeneration from '../screens/BarcodeGeneration'
+import BarcodeScannerScreen from '../screens/BarcodeScannerScreen'
 
 const Stack = createNativeStackNavigator();
 
 const AuthStack = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName='WelcomePage' screenOptions={{ headerShown:false }}>
+      <Stack.Navigator initialRouteName='AddedProductsList' screenOptions={{ headerShown:false }}>
         <Stack.Screen name='WelcomePage' component={WelcomePage}/>
         <Stack.Screen name='AdminLogin' component={AdminLogin}/>
         <Stack.Screen name='AgentLogin' component={AgentLogin}/>
@@ -29,6 +30,7 @@ const AuthStack = () => {
         <Stack.Screen name='ProductAddingScreen' component={ProductAddingScreen}/>
         <Stack.Screen name='DriveLogin' component={DriveLogin}/>
         <Stack.Screen name='BarcodeGeneration' component={BarcodeGeneration}/>
+        <Stack.Screen name='BarcodeScannerScreen' component={BarcodeScannerScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   )

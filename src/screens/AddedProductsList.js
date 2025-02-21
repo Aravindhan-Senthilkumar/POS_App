@@ -59,6 +59,7 @@ const AddedProductsList = () => {
           color={colors.darkblue}
           buttonStyle={{width: dimensions.xl * 2, height: dimensions.xl * 2}}
           radius={dimensions.xl}
+          onPress={() => navigation.navigate('BarcodeScannerScreen')}
         />
       </View>
 
